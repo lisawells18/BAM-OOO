@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team OOO Calendar — 2026</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5f6fa;
+    color: #222;
+    padding: 24px 20px 48px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 1.7rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: #1a1a2e;
+    letter-spacing: -0.3px;
+  }
+
+  .subtitle {
+    text-align: center;
+    font-size: .75rem;
+    color: #999;
+    margin-bottom: 28px;
+  }
+
+  .subtitle a { color: #999; }
+
+  .loading {
+    text-align: center;
+    padding: 60px;
+    color: #999;
+    font-size: .9rem;
+  }
+
+  .error {
+    text-align: center;
+    padding: 40px;
+    color: #c0392b;
+    font-size: .85rem;
+    background: #fdf0ef;
+    border-radius: 8px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 900px) { .calendar-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .calendar-grid { grid-template-columns: 1fr; } }
+
+  .month-block {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    overflow: hidden;
+  }
+
+  .month-title {
+    background: #1a1a2e;
+    color: #fff;
+    text-align: center;
+    font-weight: 600;
+    font-size: .85rem;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    padding: 7px 4px;
+  }
+
+  .banner-area {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 4px 6px;
+    background: #f5f6fa;
+    border-bottom: 1px solid #eef0f5;
+  }
+
+  .leave-banner {
+    font-size: .65rem;
+    font-weight: 700;
+    padding: 3px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .day-header-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: #e8eaf0;
+  }
+
+  .day-header {
+    text-align: center;
+    font-size: .65rem;
+    font-weight: 700;
+    color: #555;
+    padding: 4px 1px;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+  }
+
+  .days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+  }
+
+  .day-cell {
+    min-height: 52px;
+    border: 1px solid #eef0f5;
+    padding: 2px 2px 1px;
+    position: relative;
+    background: #fff;
+  }
+
+  .day-cell.empty { background: #fafbfc; pointer-events: none; }
+  .day-cell.holiday { background: #f0f0f3; }
+
+  .day-num {
+    font-size: .62rem;
+    font-weight: 600;
+    color: #888;
+    line-height: 1;
+    margin-bottom: 2px;
+    display: block;
+  }
+
+  .day-cell.today .day-num { color: #e74c3c; }
+
+  .holiday-label {
+    font-size: .5rem;
+    color: #999;
+    font-style: italic;
+    line-height: 1.1;
+    margin-bottom: 1px;
+    display: block;
+  }
+
+  .ooo-chips { display: flex; flex-wrap: wrap; gap: 1px; }
+
+  .chip {
+    font-size: .48rem;
+    font-weight: 700;
+    padding: 1px 3px;
+    border-radius: 3px;
+    line-height: 1.4;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .legend-section {
+    max-width: 1400px;
+    margin: 28px auto 0;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    padding: 20px 24px;
+  }
+
+  .legend-section h2 {
+    font-size: .85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: #555;
+    margin-bottom: 14px;
+  }
+
+  .legend-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 6px 12px;
+  }
+
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: .78rem; }
+
+  .legend-swatch {
+    width: 44px;
+    height: 16px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .48rem;
+    font-weight: 700;
+  }
+
+  .note { font-size: .68rem; color: #999; margin-top: 12px; font-style: italic; }
+</style>
+</head>
+<body>
+
+<h1>Team OOO Calendar — 2026</h1>
+<p class="subtitle">Data from <a href="https://docs.google.com/spreadsheets/d/1SoZ-g4ON8ccaRfkVTSnFdqNYcSQV1AiZpoocS5UXVGM/edit" target="_blank">Google Sheet</a> &nbsp;·&nbsp; Refreshes on page load</p>
+
+<div id="root"><div class="loading">Loading calendar data…</div></div>
+
+<script>
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSJmFQX2nSMVFR7sZBWKQqZ-GLfQIP5awvt45z3vhbL1OByEFiD80HrEIyQ8rrfdRisG_ME76OlHFD0/pub?gid=1159668472&single=true&output=csv';
+
+const PEOPLE = [
+  { name: "Lisa Wells",      display: "Lisa",     bg: "#f7b2bd", fg: "#4a0010" },
+  { name: "Annabel Nguyen",  display: "Annabel",  bg: "#99c1b9", fg: "#0a2a24" },
+  { name: "Rachael Meloy",   display: "Rachael",  bg: "#d4a5a5", fg: "#3d0a0a" },
+  { name: "Tracy Graham",    display: "Tracy",    bg: "#a8dadc", fg: "#003d40" },
+  { name: "Nicole Baptista", display: "Nicole",   bg: "#e8b4d0", fg: "#4a0030" },
+  { name: "Leonardo Draghi", display: "Leo",      bg: "#ffe0a3", fg: "#4a2a00" },
+  { name: "Dario Lofish",    display: "Dario",    bg: "#c5e0b4", fg: "#1a3d08" },
+  { name: "Duncan Strachan", display: "Duncan",   bg: "#f4d35e", fg: "#3d2800" },
+  { name: "Mariel DuPont",   display: "Mariel",   bg: "#e0aaff", fg: "#1e0050" },
+  { name: "Jesse Bray",      display: "Jesse",    bg: "#aed9e0", fg: "#003d45" },
+];
+
+const PERSON_MAP = {};
+PEOPLE.forEach((p, i) => { PERSON_MAP[p.name.toLowerCase()] = i; });
+
+// Leave periods shown as banners instead of per-day chips
+// { name, year, month, start, end, label }
+const LEAVE_PERIODS = [
+  { name: "Dario Lofish", year: 2026, month: 2,  start: 1, end: 28,  label: "Paternity" },
+  { name: "Dario Lofish", year: 2026, month: 5,  start: 1, end: 31,  label: "Paternity" },
+  { name: "Dario Lofish", year: 2026, month: 6,  start: 1, end: 30,  label: "Paternity" },
+  { name: "Dario Lofish", year: 2026, month: 7,  start: 1, end: 31,  label: "Paternity" },
+  { name: "Dario Lofish", year: 2026, month: 8,  start: 1, end: 31,  label: "Paternity" },
+];
+
+const LEAVE = LEAVE_PERIODS.map(l => ({
+  ...l,
+  idx: PERSON_MAP[l.name.toLowerCase()]
+})).filter(l => l.idx !== undefined);
+
+const HOLIDAYS = {};
+function holiday(y, m, d, label) {
+  HOLIDAYS[`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`] = label;
+}
+const Y = 2026;
+holiday(Y,1,1,"New Year's"); holiday(Y,1,19,"MLK Day"); holiday(Y,2,16,"Presidents Day");
+holiday(Y,5,25,"Memorial Day"); holiday(Y,7,4,"Independence Day"); holiday(Y,9,7,"Labor Day");
+holiday(Y,11,26,"Thanksgiving"); holiday(Y,11,27,"Thanksgiving"); holiday(Y,11,28,"Thanksgiving");
+for (let d=24;d<=31;d++) holiday(Y,12,d,"Winter Holiday");
+
+// ── CSV parsing ───────────────────────────────────────────────────────────────
+// Expected columns: Team | Jan | Feb | Mar | Apr | May | Jun | July | Aug | Sep | Oct | Nov | Dec
+const MONTH_COL_NAMES = ['jan','feb','mar','apr','may','jun','jul','july','aug','sep','oct','nov','dec'];
+const MONTH_COL_TO_NUM = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, july:7, aug:8, sep:9, oct:10, nov:11, dec:12 };
+
+function daysInMonth(year, month) { return new Date(year, month, 0).getDate(); }
+function range(s, e) { const a=[]; for(let i=s;i<=e;i++) a.push(i); return a; }
+
+function parseDays(str, year, month) {
+  if (!str) return { days: [], isLeave: false };
+  const s = str.trim().toLowerCase();
+  if (!s) return { days: [], isLeave: false };
+
+  // Detect leave keywords
+  const leaveKeywords = ['paternity', 'maternity', 'leave', 'out till', 'out until'];
+  if (leaveKeywords.some(k => s.includes(k))) return { days: [], isLeave: true, label: str.trim() };
+  if (s === 'out') return { days: [], isLeave: true, label: 'Out' };
+
+  const dim = daysInMonth(year, month);
+  const days = new Set();
+
+  // Split on commas and semicolons
+  const parts = str.split(/[,;]+/);
+  for (let part of parts) {
+    part = part.trim();
+    if (!part) continue;
+    // Strip annotations like "(bday)", "(Th)", "(Fri)", "(tentative)", "(PM)"
+    part = part.replace(/\(.*?\)/g, '').trim();
+    if (!part) continue;
+
+    // Range: "2-9", "26 - 27", "1–5"
+    const rangeMatch = part.match(/^(\d+)\s*[-–]\s*(\d+)$/);
+    if (rangeMatch) {
+      const s = parseInt(rangeMatch[1]), e = parseInt(rangeMatch[2]);
+      range(Math.min(s,e), Math.min(Math.max(s,e), dim)).forEach(d => days.add(d));
+      continue;
+    }
+
+    // Single number
+    const num = parseInt(part);
+    if (!isNaN(num) && num >= 1 && num <= dim) days.add(num);
+  }
+
+  return { days: [...days], isLeave: false };
+}
+
+function parseCSV(text) {
+  const lines = text.split('\n');
+  const OOO = {};
+  const DYNAMIC_LEAVE = [];
+
+  // Find header row: must have "team" in first cell
+  let headerIdx = -1;
+  let colMap = {}; // month number → col index
+
+  for (let i = 0; i < lines.length; i++) {
+    const cols = splitCSVLine(lines[i]);
+    const first = (cols[0] || '').toLowerCase().trim();
+    if (first === 'team') {
+      headerIdx = i;
+      cols.forEach((c, ci) => {
+        const key = c.toLowerCase().trim().replace(/\s*holiday.*$/,'').replace(/\s*holidays.*$/,'').trim();
+        // match month names
+        for (const mn of MONTH_COL_NAMES) {
+          if (key.startsWith(mn)) { colMap[MONTH_COL_TO_NUM[mn]] = ci; break; }
+        }
+      });
+      break;
+    }
+  }
+
+  if (headerIdx === -1) return { OOO, LEAVE: DYNAMIC_LEAVE };
+
+  for (let i = headerIdx + 1; i < lines.length; i++) {
+    const cols = splitCSVLine(lines[i]);
+    const personName = (cols[0] || '').trim();
+    if (!personName) continue;
+
+    const personKey = personName.toLowerCase();
+    const idx = PERSON_MAP[personKey];
+    if (idx === undefined) continue; // not on our team
+
+    // Check if this person already has a static leave period for this month (skip chip rendering)
+    for (const [month, colIdx] of Object.entries(colMap)) {
+      const m = parseInt(month);
+      const cellVal = (cols[colIdx] || '').trim();
+      if (!cellVal) continue;
+
+      const { days, isLeave, label } = parseDays(cellVal, Y, m);
+
+      if (isLeave) {
+        // Only add if not already covered by a static LEAVE entry
+        const alreadyCovered = LEAVE.some(l => l.idx === idx && l.month === m);
+        if (!alreadyCovered) {
+          DYNAMIC_LEAVE.push({ idx, year: Y, month: m, start: 1, end: daysInMonth(Y, m), label: label || 'Leave' });
+        }
+      } else {
+        days.forEach(d => {
+          const key = `${Y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          if (!OOO[key]) OOO[key] = [];
+          if (!OOO[key].includes(idx)) OOO[key].push(idx);
+        });
+      }
+    }
+  }
+
+  return { OOO, LEAVE: DYNAMIC_LEAVE };
+}
+
+function splitCSVLine(line) {
+  const result = [];
+  let cur = '', inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQuote = !inQuote; }
+    else if (ch === ',' && !inQuote) { result.push(cur); cur = ''; }
+    else { cur += ch; }
+  }
+  result.push(cur);
+  return result;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+const MONTH_NAMES = ["January","February","March","April","May","June",
+                     "July","August","September","October","November","December"];
+const DOW_LABELS  = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+function dateKey(year, month, day) {
+  return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+}
+
+function buildMonth(year, month, OOO, allLeave) {
+  const dim = daysInMonth(year, month);
+  const firstDOW = new Date(year, month-1, 1).getDay();
+  const startOffset = (firstDOW === 0) ? 6 : firstDOW - 1;
+
+  const block = document.createElement('div');
+  block.className = 'month-block';
+
+  const title = document.createElement('div');
+  title.className = 'month-title';
+  title.textContent = `${MONTH_NAMES[month-1]} ${year}`;
+  block.appendChild(title);
+
+  const monthLeave = allLeave.filter(l => l.year === year && l.month === month);
+  if (monthLeave.length > 0) {
+    const bannerArea = document.createElement('div');
+    bannerArea.className = 'banner-area';
+    monthLeave.forEach(l => {
+      const p = PEOPLE[l.idx];
+      const banner = document.createElement('div');
+      banner.className = 'leave-banner';
+      banner.style.background = p.bg;
+      banner.style.color = p.fg;
+      const dateRange = l.start === 1 && l.end === dim ? 'Full month' : `${l.start}–${l.end}`;
+      banner.textContent = `${p.display} — ${l.label} (${dateRange})`;
+      banner.title = `${p.name}: ${l.label} ${dateRange}`;
+      bannerArea.appendChild(banner);
+    });
+    block.appendChild(bannerArea);
+  }
+
+  const headerRow = document.createElement('div');
+  headerRow.className = 'day-header-row';
+  DOW_LABELS.forEach(d => {
+    const h = document.createElement('div');
+    h.className = 'day-header';
+    h.textContent = d;
+    headerRow.appendChild(h);
+  });
+  block.appendChild(headerRow);
+
+  const grid = document.createElement('div');
+  grid.className = 'days-grid';
+
+  for (let i = 0; i < startOffset; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'day-cell empty';
+    grid.appendChild(cell);
+  }
+
+  const today = new Date();
+
+  for (let d = 1; d <= dim; d++) {
+    const key = dateKey(year, month, d);
+    const cell = document.createElement('div');
+    cell.className = 'day-cell';
+    if (HOLIDAYS[key]) cell.classList.add('holiday');
+    if (today.getFullYear()===year && today.getMonth()+1===month && today.getDate()===d)
+      cell.classList.add('today');
+
+    const numSpan = document.createElement('span');
+    numSpan.className = 'day-num';
+    numSpan.textContent = d;
+    cell.appendChild(numSpan);
+
+    if (HOLIDAYS[key]) {
+      const hl = document.createElement('span');
+      hl.className = 'holiday-label';
+      hl.textContent = HOLIDAYS[key];
+      cell.appendChild(hl);
+    }
+
+    const people = OOO[key];
+    if (people && people.length > 0) {
+      const chipsDiv = document.createElement('div');
+      chipsDiv.className = 'ooo-chips';
+      people.forEach(pIdx => {
+        const p = PEOPLE[pIdx];
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.style.background = p.bg;
+        chip.style.color = p.fg;
+        chip.textContent = p.display;
+        chip.title = p.name;
+        chipsDiv.appendChild(chip);
+      });
+      cell.appendChild(chipsDiv);
+    }
+
+    grid.appendChild(cell);
+  }
+
+  const totalCells = startOffset + dim;
+  const remainder = totalCells % 7;
+  if (remainder !== 0) {
+    for (let i = 0; i < 7 - remainder; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'day-cell empty';
+      grid.appendChild(cell);
+    }
+  }
+
+  block.appendChild(grid);
+  return block;
+}
+
+function render(OOO, dynamicLeave) {
+  const allLeave = [...LEAVE, ...dynamicLeave];
+  const root = document.getElementById('root');
+  root.innerHTML = '';
+
+  const calGrid = document.createElement('div');
+  calGrid.className = 'calendar-grid';
+  for (let m = 1; m <= 12; m++) calGrid.appendChild(buildMonth(Y, m, OOO, allLeave));
+  root.appendChild(calGrid);
+
+  const legendSection = document.createElement('div');
+  legendSection.className = 'legend-section';
+  legendSection.innerHTML = '<h2>Team Members</h2><div class="legend-grid" id="legendGrid"></div><p class="note">Gray cells = company holidays &nbsp;·&nbsp; Banners = extended leave &nbsp;·&nbsp; Last updated: ' + new Date().toLocaleString() + '</p>';
+  root.appendChild(legendSection);
+
+  const legendGrid = legendSection.querySelector('#legendGrid');
+  PEOPLE.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    const swatch = document.createElement('div');
+    swatch.className = 'legend-swatch';
+    swatch.style.background = p.bg;
+    swatch.style.color = p.fg;
+    swatch.textContent = p.display;
+    const label = document.createElement('span');
+    label.textContent = p.name;
+    item.appendChild(swatch);
+    item.appendChild(label);
+    legendGrid.appendChild(item);
+  });
+}
+
+// ── Fetch & boot ──────────────────────────────────────────────────────────────
+fetch(CSV_URL)
+  .then(r => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.text();
+  })
+  .then(text => {
+    const { OOO, LEAVE: dynamicLeave } = parseCSV(text);
+    render(OOO, dynamicLeave);
+  })
+  .catch(err => {
+    document.getElementById('root').innerHTML =
+      `<div class="error"><strong>Could not load calendar data.</strong><br>${err.message}<br><br>Make sure the Google Sheet is published to the web as CSV.</div>`;
+  });
+</script>
+</body>
+</html>
